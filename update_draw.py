@@ -10,18 +10,30 @@ def get_ssq():
     res = requests.get(url, headers=headers, timeout=15)
     res.raise_for_status()
     data = res.json()
-    return data["result"]
+    arr = []
+    for item in data["result"]:
+        red = list(map(int, item["red"].split(",")))
+        blue = int(item["blue"])
+        arr.append({
+            "code": item["code"],
+            "date": item["date"],
+            "red": red,
+            "blue": blue
+        })
+    return arr
 
 def inject_data(html_path, draw_list):
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
-    # 把开奖数据写入JS里的drawHistory
-    js_data = json.dumps(draw_list, ensure_ascii=False)
-    new_html = re.sub(r'const drawHistory = \[.*?\];', f'const drawHistory = {js_data};', html, flags=re.S)
+    js_data = ",\n".join([f'    {json.dumps(x, ensure_ascii=False)}' for x in draw_list])
+    # 替换两个标记中间的内容
+    pattern = r'// === DRAW_DATA_START ===\n.*?\n// === DRAW_DATA_END ==='
+    new_block = f'// === DRAW_DATA_START ===\n{js_data}\n// === DRAW_DATA_END ==='
+    new_html = re.sub(pattern, new_block, html, flags=re.S)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(new_html)
 
 if __name__ == "__main__":
     draw = get_ssq()
     inject_data("index.html", draw)
-    print("✅ 开奖数据已更新到index.html")
+    print("✅ 开奖数据更新成功")
