@@ -114,15 +114,12 @@
     </style>
 </head>
 <body>
-
 <div class="toast" id="toast">提示信息</div>
-
 <div class="container">
     <div class="header">
         <h1>双色球智能选号</h1>
         <p id="status">正在加载本地数据...</p>
     </div>
-
     <div class="ledger-card">
         <div class="ledger-item">
             <p>累计投入</p>
@@ -139,7 +136,6 @@
             <h3 id="ledgerNet">￥0</h3>
         </div>
     </div>
-
     <div class="control-card">
         <div class="select-row">
             <select id="pickMode" class="select-mode">
@@ -159,9 +155,7 @@
             <button class="btn-main" onclick="generate(1)">机选一注</button>
             <button class="btn-main outline" onclick="generate(3)">机选三注</button>
         </div>
-
         <button class="btn-compare" onclick="checkPrize(false)">🎯 手动比对最新开奖</button>
-
         <div class="toggle-row">
             <div>
                 <div class="toggle-label">防连出降权机制</div>
@@ -173,7 +167,6 @@
             </label>
         </div>
     </div>
-
     <div class="hot-cold-card">
         <div class="hc-title">
             <span>近10期走势分析</span>
@@ -196,11 +189,9 @@
             <div class="hc-balls" id="coldBlueList"></div>
         </div>
     </div>
-
     <div class="result-card" id="resultBox">
         <div id="pickDisplay"></div>
     </div>
-
     <div class="watch-card" id="watchBox">
         <div class="watch-title">
             <span>⭐ 我的追号 (最多5注)</span>
@@ -209,7 +200,6 @@
         <div id="watchListDisplay"></div>
         <button class="btn-copy-all" id="btnCopyAll" onclick="copyAllTickets()" style="display:none;">📋 一键复制所有追号</button>
     </div>
-
     <div class="history-card">
         <div class="history-title">
             <span>近期开奖结果</span>
@@ -219,7 +209,6 @@
         <div class="toggle-history-btn" id="toggleHistoryBtn" onclick="toggleHistory()">展开更多 ↓</div>
     </div>
 </div>
-
 <div class="modal-overlay" id="modal">
     <div class="modal-content" id="modalContentBox">
         <h2 id="modalTitle">开奖比对结果</h2>
@@ -227,7 +216,6 @@
         <button class="btn-close" onclick="closeModal()">我知道了</button>
     </div>
 </div>
-
 <div class="modal-overlay" id="manualModal">
     <div class="modal-content">
         <h2 style="margin-bottom: 10px; color: var(--text-main);">手动选号 (支持胆拖/复式)</h2>
@@ -251,33 +239,27 @@
         <button class="btn-cancel" onclick="closeManualInput()">取消</button>
     </div>
 </div>
-
 <!-- 录入开奖结果弹窗（号码球点选） -->
 <div class="modal-overlay" id="drawInputModal">
     <div class="modal-content">
         <h2 style="margin-bottom: 10px; color: var(--text-main);">录入最新开奖结果</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 15px;">接口不可用时，按官网开奖号码点选录入</p>
-
         <div style="text-align: left; margin-bottom: 10px; font-weight: bold; font-size: 14px;">期号</div>
         <input type="number" id="inputCode" placeholder="例如：2026134" class="draw-code-input" style="margin-bottom: 15px;">
-
         <div class="pick-header">
             <span>红球区（选 6 个）</span>
             <span class="pick-hint" id="drawRedHint">已选 0/6</span>
         </div>
         <div class="grid-container" id="drawRedGrid"></div>
-
         <div class="pick-header">
             <span>蓝球区（选 1 个）</span>
             <span class="pick-hint" id="drawBlueHint">已选 0/1</span>
         </div>
         <div class="grid-container" id="drawBlueGrid" style="grid-template-columns: repeat(8, 1fr);"></div>
-
         <button class="btn-submit" onclick="saveDrawInput()">保存并更新</button>
         <button class="btn-cancel" onclick="closeDrawInput()">取消</button>
     </div>
 </div>
-
 <script>
     // 历史开奖数据（由 GitHub Actions 定时从福彩官网自动写入，标记之间请勿手动改动）
     let latestHistory = [
@@ -295,6 +277,38 @@
         // === DRAW_DATA_END ===
     ];
 
+    // ============新增：前端通过Worker代理拉取开奖数据============
+    async function fetchLatestLottery() {
+        const target = encodeURIComponent("https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=10");
+        const proxyUrl = `https://lottery-proxy.1106293639.workers.dev?target=${target}`;
+        try {
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error("接口返回异常");
+            const json = await res.json();
+            if (json && json.result && Array.isArray(json.result)) {
+                const newList = json.result.map(item => {
+                    const redArr = item.red.split(",").map(Number);
+                    return {
+                        code: item.code,
+                        date: item.date,
+                        red: redArr,
+                        blue: Number(item.blue)
+                    }
+                })
+                latestHistory = newList;
+                console.log("✅ 成功同步最新开奖");
+                currentDraw = latestHistory[0];
+                analyzeHotCold();
+                renderHistory();
+                renderWatchlist();
+            }
+        } catch (err) {
+            console.log("❌ 联网同步失败，使用本地兜底数据：", err);
+        }
+    }
+    fetchLatestLottery();
+    // =========================================================
+
     // 本地手动录入的开奖（若比默认数据新则覆盖到第一项）
     let localDraw = JSON.parse(localStorage.getItem('ssq_local_draw'));
     if (localDraw) {
@@ -307,17 +321,14 @@
             }
         }
     }
-
     let myWatchlist = JSON.parse(localStorage.getItem('ssq_watchlist')) || [];
     let currentDraw = latestHistory[0];
     let ledger = JSON.parse(localStorage.getItem('ssq_ledger')) || { cost: 0, win: 0 };
     let selectedDans = [], selectedTuos = [], selectedBlues = [];
     let hotReds = [], coldReds = [], hotBlues = [], coldBlues = [];
     let isHistoryExpanded = false;
-
     // 录入开奖的点选状态
     let drawReds = [], drawBlue = null;
-
     function combination(n, k) {
         if (k < 0 || k > n) return 0;
         if (k === 0 || k === n) return 1;
@@ -325,7 +336,6 @@
         for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i;
         return Math.round(res);
     }
-
     function init() {
         myWatchlist.forEach(ticket => {
             if (!ticket.dans) ticket.dans = [];
@@ -336,21 +346,17 @@
             if (!ticket.multiple) ticket.multiple = 1;
         });
         localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-
         renderLedger();
         analyzeHotCold();
         renderWatchlist();
         renderHistory();
-
         document.getElementById('status').innerText = `本地数据已加载 (第 ${currentDraw.code} 期)`;
         document.getElementById('status').style.color = "#2ecc71";
-
         let hasComparable = myWatchlist.some(t => t.issueWhenAdded !== currentDraw.code || t.isInfinite);
         if (myWatchlist.length > 0 && hasComparable) {
             setTimeout(() => { checkPrize(true); }, 500);
         }
     }
-
     // ===== 手动录入开奖：号码球点选 =====
     function openDrawInput() {
         drawReds = [];
@@ -363,9 +369,7 @@
         renderDrawGrids();
         document.getElementById('drawInputModal').style.display = 'flex';
     }
-
     function closeDrawInput() { document.getElementById('drawInputModal').style.display = 'none'; }
-
     function renderDrawGrids() {
         const redGrid = document.getElementById('drawRedGrid');
         redGrid.innerHTML = '';
@@ -377,7 +381,6 @@
             btn.onclick = () => toggleDrawRed(i);
             redGrid.appendChild(btn);
         }
-
         const blueGrid = document.getElementById('drawBlueGrid');
         blueGrid.innerHTML = '';
         for (let i = 1; i <= 16; i++) {
@@ -388,11 +391,9 @@
             btn.onclick = () => toggleDrawBlue(i);
             blueGrid.appendChild(btn);
         }
-
         document.getElementById('drawRedHint').innerText = `已选 ${drawReds.length}/6`;
         document.getElementById('drawBlueHint').innerText = `已选 ${drawBlue ? 1 : 0}/1`;
     }
-
     function toggleDrawRed(num) {
         let idx = drawReds.indexOf(num);
         if (idx > -1) {
@@ -403,27 +404,22 @@
         }
         renderDrawGrids();
     }
-
     function toggleDrawBlue(num) {
         drawBlue = (drawBlue === num) ? null : num;
         renderDrawGrids();
     }
-
     function saveDrawInput() {
         let code = document.getElementById('inputCode').value.trim();
         if (!code) { showToast("请输入期号"); return; }
         if (drawReds.length !== 6) { showToast("请点选 6 个红球"); return; }
         if (drawBlue == null) { showToast("请点选 1 个蓝球"); return; }
-
         let reds = [...drawReds].sort((a, b) => a - b);
         let today = new Date();
         let dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
         let newDraw = { code: code, date: dateStr, red: reds, blue: drawBlue };
         localStorage.setItem('ssq_local_draw', JSON.stringify(newDraw));
         location.reload();
     }
-
     function renderHistory() {
         const container = document.getElementById('historyList');
         container.innerHTML = '';
@@ -443,9 +439,7 @@
             btn.innerText = isHistoryExpanded ? '收起记录 ↑' : '展开更多 ↓';
         } else { btn.style.display = 'none'; }
     }
-
     function toggleHistory() { isHistoryExpanded = !isHistoryExpanded; renderHistory(); }
-
     function analyzeHotCold() {
         let redCounts = {}, blueCounts = {};
         for(let i=1; i<=33; i++) redCounts[i] = 0;
@@ -465,7 +459,6 @@
         document.getElementById('hotBlueList').innerHTML = hotBlues.map(n => `<span class="hc-ball hc-hot-blue">${String(n).padStart(2,'0')}</span>`).join('');
         document.getElementById('coldBlueList').innerHTML = coldBlues.map(n => `<span class="hc-ball hc-cold-blue">${String(n).padStart(2,'0')}</span>`).join('');
     }
-
     function renderLedger() {
         document.getElementById('ledgerCost').innerText = `￥${ledger.cost}`;
         document.getElementById('ledgerWin').innerText = `￥${ledger.win}`;
@@ -475,14 +468,12 @@
         if (net >= 0) { netBox.innerText = `+￥${net}`; netItem.className = 'ledger-item win'; }
         else { netBox.innerText = `-￥${Math.abs(net)}`; netItem.className = 'ledger-item loss'; }
     }
-
     function updateLedger(costAdd, winAdd) {
         if (costAdd) ledger.cost += costAdd;
         if (winAdd) ledger.win += winAdd;
         localStorage.setItem('ssq_ledger', JSON.stringify(ledger));
         renderLedger();
     }
-
     function getStreak(num, type, history) {
         let streak = 0;
         for (let i = 0; i < Math.min(3, history.length); i++) {
@@ -491,7 +482,6 @@
         }
         return streak;
     }
-
     function getWeight(num, type, history) {
         const streak = getStreak(num, type, history);
         if (streak >= 3) return 0;
@@ -499,7 +489,6 @@
         if (streak === 1) return 0.95;
         return 1.0;
     }
-
     function generateOneTicket(useProb) {
         const mode = document.getElementById('pickMode').value;
         const [rCount, bCount] = mode.split('-').map(Number);
@@ -532,7 +521,6 @@
         blues.sort((a,b) => a-b);
         return { dans: [], tuos: reds, blue: blues, multiple: multiple };
     }
-
     function generate(count) {
         if (latestHistory.length === 0) { showToast("暂无数据，请先录入开奖"); return; }
         const useProb = document.getElementById('probSwitch').checked;
@@ -549,13 +537,11 @@
             displayDiv.innerHTML += `<div class="result-item"><div class="result-top"><div class="ball-group">${redHtml}<span class="ball plus">+</span>${blueHtml}</div></div><div class="watch-bottom"><span class="price-tag">${ticket.multiple}倍 | ${notes}注 | ￥${price}元</span><div class="action-btns"><button class="btn-small btn-copy" onclick='copyTicket(${JSON.stringify(ticket)})'>复制</button><button class="btn-small btn-save" onclick='saveWatch(${JSON.stringify(ticket)})' ${isSaved ? 'disabled' : ''}>${isSaved ? '已追号' : '⭐ 追号'}</button></div></div></div>`;
         }
     }
-
     function copyToClipboard(text) {
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(() => showToast("号码已复制")).catch(err => fallbackCopyTextToClipboard(text));
         } else { fallbackCopyTextToClipboard(text); }
     }
-
     function fallbackCopyTextToClipboard(text) {
         var textArea = document.createElement("textarea");
         textArea.value = text;
@@ -568,14 +554,12 @@
         } catch (err) { showToast("复制失败，请长按手动复制"); }
         document.body.removeChild(textArea);
     }
-
     function copyTicket(ticket) {
         let rStr = ticket.tuos.map(n => String(n).padStart(2,'0')).join(' ');
         let bStr = ticket.blue.map(n => String(n).padStart(2,'0')).join(' ');
         let text = `${rStr} + ${bStr} (${ticket.multiple}倍)`;
         copyToClipboard(text);
     }
-
     function copyAllTickets() {
         if(myWatchlist.length === 0) return;
         let text = "【我的双色球追号】\n";
@@ -587,7 +571,6 @@
         });
         copyToClipboard(text);
     }
-
     function saveWatch(ticket) {
         if (myWatchlist.length >= 5) { showToast("最多只能追号 5 注！"); return; }
         ticket.issueWhenAdded = currentDraw ? currentDraw.code : "0";
@@ -601,7 +584,6 @@
         if(document.getElementById('resultBox').style.display === 'block') generate(document.querySelectorAll('.result-item').length);
         showToast("追号成功，已扣除本金");
     }
-
     function removeWatch(index) {
         if (confirm("确定要移除这注追号吗？")) {
             myWatchlist.splice(index, 1);
@@ -610,7 +592,6 @@
             if(document.getElementById('resultBox').style.display === 'block') generate(document.querySelectorAll('.result-item').length);
         }
     }
-
     function rolloverTicket(index) {
         if (!currentDraw) { showToast("数据尚未加载完毕"); return; }
         myWatchlist[index].issueWhenAdded = currentDraw.code;
@@ -618,7 +599,6 @@
         renderWatchlist();
         showToast("已追加，下期自动比对");
     }
-
     function toggleInfinite(index) {
         myWatchlist[index].isInfinite = !myWatchlist[index].isInfinite;
         if(myWatchlist[index].isInfinite && currentDraw) myWatchlist[index].issueWhenAdded = currentDraw.code;
@@ -626,7 +606,6 @@
         renderWatchlist();
         showToast(myWatchlist[index].isInfinite ? "已开启永久守号" : "已关闭永久守号");
     }
-
     function renderWatchlist() {
         let box = document.getElementById('watchBox');
         let display = document.getElementById('watchListDisplay');
@@ -654,7 +633,6 @@
             display.innerHTML += `<div class="watch-item"><div class="ball-group">${danHtml}${tuoHtml}<span class="ball plus">+</span>${blueHtml}${statusTag}${danTag}</div><div class="watch-bottom"><span class="price-tag">${ticket.multiple}倍 | ￥${price}</span><div style="display:flex; align-items:center;">${actionBtns}<button class="btn-del" onclick="removeWatch(${index})">×</button></div></div></div>`;
         });
     }
-
     function getPrizeLevel(redHit, blueHit) {
         if (redHit === 6 && blueHit === 1) return { level: '一等奖', money: 5000000 };
         if (redHit === 6 && blueHit === 0) return { level: '二等奖', money: 150000 };
@@ -664,7 +642,6 @@
         if (blueHit === 1 || (redHit === 2 && blueHit === 1) || (redHit === 1 && blueHit === 1)) return { level: '六等奖', money: 5 };
         return null;
     }
-
     function checkPrize(isAuto = false) {
         if (!currentDraw) { showToast("数据未加载完毕"); return; }
         if (myWatchlist.length === 0) { if(!isAuto) showToast("请先添加追号！"); return; }
@@ -713,16 +690,13 @@
         localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
         renderWatchlist();
     }
-
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
     function showToast(msg) {
         let toast = document.getElementById('toast');
         toast.innerText = msg;
         toast.style.display = 'block';
         setTimeout(() => { toast.style.display = 'none'; }, 2000);
     }
-
     function openManualInput() {
         if (myWatchlist.length >= 5) { showToast("追号已满 5 注，无法继续添加！"); return; }
         selectedDans = []; selectedTuos = []; selectedBlues = [];
@@ -730,9 +704,7 @@
         renderPickGrids();
         document.getElementById('manualModal').style.display = 'flex';
     }
-
     function closeManualInput() { document.getElementById('manualModal').style.display = 'none'; }
-
     function renderPickGrids() {
         const isDanMode = document.getElementById('danMode').checked;
         const redGrid = document.getElementById('redGrid');
@@ -790,9 +762,7 @@
             submitBtn.style.background = '#ccc';
         }
     }
-
     function vibrate() { if (navigator.vibrate) navigator.vibrate(20); }
-
     function toggleRed(num, isDanMode) {
         vibrate();
         let idxDan = selectedDans.indexOf(num), idxTuo = selectedTuos.indexOf(num);
@@ -813,7 +783,6 @@
         }
         renderPickGrids();
     }
-
     function toggleBlue(num) {
         vibrate();
         let idx = selectedBlues.indexOf(num);
@@ -824,25 +793,6 @@
         }
         renderPickGrids();
     }
-
     function saveManualTicket() {
         if (document.getElementById('btnSubmitManual').disabled) return;
-        selectedDans.sort((a,b) => a-b); selectedTuos.sort((a,b) => a-b); selectedBlues.sort((a,b) => a-b);
-        let multiple = parseInt(document.getElementById('multiple').value);
-        let ticket = { dans: [...selectedDans], tuos: [...selectedTuos], blue: [...selectedBlues], multiple: multiple, isInfinite: false };
-        if (myWatchlist.some(w => w.dans.join() === ticket.dans.join() && w.tuos.join() === ticket.tuos.join() && w.blue.join() === ticket.blue.join())) { showToast("这注号码已经在追号列表里了"); return; }
-        ticket.issueWhenAdded = currentDraw ? currentDraw.code : "0";
-        myWatchlist.push(ticket);
-        localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-        let notes = combination(ticket.tuos.length, 6) * ticket.blue.length;
-        if (ticket.dans.length > 0) notes = combination(ticket.tuos.length, 6 - ticket.dans.length) * ticket.blue.length;
-        updateLedger(notes * 2 * ticket.multiple, 0);
-        renderWatchlist();
-        closeManualInput();
-        showToast("添加成功，已扣除本金！");
-    }
-
-    window.onload = init;
-</script>
-</body>
-</html>
+        selected
