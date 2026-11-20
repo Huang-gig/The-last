@@ -5,794 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>双色球智能选号助手</title>
     <style>
-        :root { --red-color: #e53935; --red-glow: #ff5252; --gold-color: #ffb300; --gold-glow: #ffca28; --blue-color: #1e88e5; --blue-glow: #42a5f5; --bg-color: #f2f4f8; --card-bg: #ffffff; --text-main: #2c3e50; --text-reg: #7f8c8d; }
-        body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; color: var(--text-main); }
-        .container { max-width: 600px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 20px; position: relative;}
-        .header h1 { color: var(--red-color); font-size: 24px; margin: 0 0 5px 0; font-weight: 900; letter-spacing: 1px;}
-        .header p { color: var(--text-reg); font-size: 13px; margin: 0; }
-        .btn-refresh { position: absolute; right: 0; top: 5px; background: #fff; border: 1px solid #ddd; color: var(--text-reg); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer;}
-        .btn-refresh:active { background: #eee; }
-        .control-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .select-row { margin-bottom: 15px; display: flex; gap: 10px;}
-        .select-mode { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; color: var(--text-main); outline: none; font-weight: bold; background: #f8f9fa;}
-        .action-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn-main { flex: 1; background: linear-gradient(135deg, #e53935, #c62828); color: white; border: none; border-radius: 10px; padding: 15px 0; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(229,57,53,0.3); transition: transform 0.1s; }
-        .btn-main:active { transform: scale(0.96); }
-        .btn-main.outline { background: white; color: var(--red-color); border: 2px solid var(--red-color); box-shadow: none; }
-        .btn-compare { width: 100%; background: linear-gradient(135deg, #4caf50, #388e3c); color: white; border: none; border-radius: 10px; padding: 12px 0; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(76,175,80,0.3); margin-bottom: 15px; transition: transform 0.1s; }
-        .btn-compare:active { transform: scale(0.96); }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px 15px; border-radius: 10px; }
-        .toggle-label { font-size: 14px; font-weight: bold; color: #333; }
-        .toggle-desc { font-size: 12px; color: var(--text-reg); margin-top: 2px;}
-        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--red-color); }
-        input:checked + .slider:before { transform: translateX(22px); }
-        .ledger-card { background: linear-gradient(135deg, #2c3e50, #000000); color: white; border-radius: 16px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
-        .ledger-item { text-align: center; flex: 1;}
-        .ledger-item p { margin: 0; font-size: 12px; color: #bdc3c7;}
-        .ledger-item h3 { margin: 5px 0 0 0; font-size: 18px; font-weight: bold;}
-        .ledger-item.win h3 { color: #2ecc71; }
-        .ledger-item.loss h3 { color: #e74c3c; }
-        .ledger-divider { width: 1px; height: 30px; background: #555;}
-        .hot-cold-card { background: var(--card-bg); border-radius: 16px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .hc-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between;}
-        .hc-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px;}
-        .hc-label { width: 60px; font-weight: bold;}
-        .hc-balls { display: flex; gap: 5px; flex-wrap: wrap;}
-        .hc-ball { padding: 2px 8px; border-radius: 4px; font-family: monospace; font-weight: bold;}
-        .hc-hot { background: #ffebee; color: #e53935; border: 1px solid #ffcdd2;}
-        .hc-cold { background: #e3f2fd; color: #1e88e5; border: 1px solid #bbdefb;}
-        .hc-hot-blue { background: #e3f2fd; color: #1e88e5; border: 1px solid #90caf9;}
-        .hc-cold-blue { background: #e0f7fa; color: #00bcd4; border: 1px solid #80deea;}
-        .result-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: none; border-top: 5px solid var(--red-color); }
-        .result-item { display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px dashed #eee; }
-        .result-item:last-child { border-bottom: none; }
-        .result-top { display: flex; justify-content: space-between; align-items: center; width: 100%;}
-        .ball-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 5px;}
-        .ball { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; font-weight: bold; color: white; font-family: 'Arial', sans-serif; position: relative; }
-        .ball.red { background: radial-gradient(circle at 35% 35%, var(--red-glow), var(--red-color)); box-shadow: inset -3px -3px 6px rgba(0,0,0,0.2), 0 3px 5px rgba(229,57,53,0.4); }
-        .ball.gold { background: radial-gradient(circle at 35% 35%, var(--gold-glow), var(--gold-color)); box-shadow: inset -3px -3px 6px rgba(0,0,0,0.2), 0 3px 5px rgba(255,179,0,0.4); }
-        .ball.blue { background: radial-gradient(circle at 35% 35%, var(--blue-glow), var(--blue-color)); box-shadow: inset -3px -3px 6px rgba(0,0,0,0.2), 0 3px 5px rgba(30,136,229,0.4); }
-        .ball.plus { background: none; box-shadow: none; color: #999; width: 15px; font-size: 18px; }
-        .action-btns { display: flex; gap: 6px; align-self: flex-end; margin-top: 5px;}
-        .btn-small { padding: 6px 12px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-save { background: var(--gold-color); color: white; }
-        .btn-save:disabled { background: #ccc; }
-        .btn-copy { background: #e0e0e0; color: #333; }
-        .price-tag { font-size: 13px; color: #e53935; font-weight: bold;}
-        .watch-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: none; border-left: 5px solid var(--gold-color); }
-        .watch-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: #333; }
-        .btn-manual { background: #fff; color: var(--gold-color); border: 1px solid var(--gold-color); padding: 4px 10px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: 0.2s;}
-        .btn-manual:hover { background: var(--gold-color); color: white; }
-        .watch-item { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 1px dashed #eee;}
-        .watch-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
-        .watch-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 5px;}
-        .status-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; font-weight: normal;}
-        .status-wait { background: #e3f2fd; color: #1e88e5; }
-        .status-done { background: #f5f5f5; color: #999; }
-        .status-inf { background: #e8f5e9; color: #4caf50; }
-        .status-dan { background: #fff8e1; color: #ffb300; border: 1px solid #ffca28;}
-        .btn-rollover { background: #e3f2fd; color: #1e88e5; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; margin-right: 5px; font-weight: bold;}
-        .btn-inf { background: #e8f5e9; color: #4caf50; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; margin-right: 5px; font-weight: bold;}
-        .btn-inf.active { background: #4caf50; color: white;}
-        .btn-del { color: #999; background: none; border: none; font-size: 20px; cursor: pointer; }
-        .btn-copy-all { width: 100%; background: #f8f9fa; color: #333; border: 1px dashed #ccc; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        .history-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .history-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; border-left: 4px solid var(--red-color); padding-left: 10px; display: flex; justify-content: space-between; align-items: center;}
-        .toggle-history-btn { width: 100%; text-align: center; color: var(--blue-color); font-size: 13px; font-weight: bold; margin-top: 10px; cursor: pointer; padding: 5px; background: #f0f7ff; border-radius: 6px;}
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-content { background: white; width: 90%; max-width: 450px; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; overflow: hidden; max-height: 90vh; overflow-y: auto;}
-        .modal-content.win-bg { background: linear-gradient(135deg, #fffdf5, #fff3e0); border: 2px solid var(--gold-color); }
-        .modal h2 { margin: 0 0 10px 0; color: var(--text-main); font-size: 20px; }
-        .match-detail { background: #f8f9fa; border-radius: 10px; padding: 15px; margin: 15px 0; font-size: 14px; text-align: left;}
-        .prize-level { color: var(--red-color); font-size: 18px; font-weight: 900; margin-bottom: 5px; display: block;}
-        .btn-close { background: var(--red-color); color: white; border: none; border-radius: 10px; padding: 12px 0; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .pick-header { font-size: 14px; color: var(--text-main); font-weight: bold; margin: 15px 0 10px 0; display: flex; justify-content: space-between; align-items: center;}
-        .pick-hint { font-size: 12px; color: var(--text-reg); font-weight: normal;}
-        .dan-toggle { display: flex; align-items: center; font-size: 12px; background: #fff8e1; color: #ffb300; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffca28; cursor: pointer; font-weight: bold;}
-        .dan-toggle input { margin-right: 5px; }
-        .grid-container { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 15px; }
-        .num-btn { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 1px solid #e0e0e0; background: #f8f9fa; color: #333; font-size: 16px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.1s; user-select: none; position: relative;}
-        .num-btn:active { transform: scale(0.85); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .num-btn.selected.red { background: var(--red-color); color: white; border-color: var(--red-color); box-shadow: 0 2px 5px rgba(229,57,53,0.4);}
-        .num-btn.selected.gold { background: var(--gold-color); color: white; border-color: var(--gold-color); box-shadow: 0 2px 5px rgba(255,179,0,0.4);}
-        .num-btn.selected.blue { background: var(--blue-color); color: white; border-color: var(--blue-color); box-shadow: 0 2px 5px rgba(30,136,229,0.4);}
-        .hot-mark { position: absolute; top: -2px; right: -2px; font-size: 12px; }
-        .cold-mark { position: absolute; top: -2px; right: -2px; font-size: 12px; }
-        .price-panel { font-size: 16px; font-weight: bold; color: var(--red-color); margin: 15px 0; text-align: left; background: #ffebee; padding: 10px; border-radius: 8px; display: none;}
-        .price-panel span { font-size: 22px; }
-        .btn-submit { background: var(--red-color); color: white; border: none; border-radius: 10px; padding: 12px 0; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;}
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-cancel { background: #eee; color: #333; border: none; border-radius: 10px; padding: 10px 0; width: 100%; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; display: none; z-index: 2000; }
-        .btn-update-manual { background: #fff; border: 1px solid #1976d2; color: #1976d2; font-size: 12px; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
-        .draw-code-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        :root {
+            --red-color: #e53935;
+            --red-glow: #ff5252;
+            --gold-color: #ffb300;
+            --gold-glow: #ffca28;
+            --blue-color: #1e88e5;
+            --blue-glow: #42a5f5;
+            --bg-color: #f2f4f8;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-reg: #7f8c8d;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .latest-info {
+            text-align: center;
+            margin-bottom:16px;
+        }
+        .ball-wrap {
+            display: flex;
+            gap:10px;
+            justify-content:center;
+            flex-wrap:wrap;
+            margin:16px 0;
+        }
+        .red-ball {
+            width:44px;
+            height:44px;
+            border-radius:50%;
+            background:var(--red-color);
+            color:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            box-shadow: 0 0 8px var(--red-glow);
+        }
+        .blue-ball {
+            width:44px;
+            height:44px;
+            border-radius:50%;
+            background:var(--blue-color);
+            color:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            box-shadow: 0 0 8px var(--blue-glow);
+        }
+        .btn {
+            display:block;
+            width:100%;
+            padding:14px;
+            border:none;
+            border-radius:12px;
+            background:#3498db;
+            color:white;
+            font-size:17px;
+            cursor:pointer;
+            margin:8px 0;
+        }
+        .history-item {
+            padding:10px 0;
+            border-bottom:1px solid #eee;
+        }
+        .tip {
+            color:var(--text-reg);
+            font-size:13px;
+            text-align:center;
+            margin-top:10px;
+        }
     </style>
 </head>
 <body>
-<div class="toast" id="toast">提示信息</div>
-<div class="container">
-    <div class="header">
-        <h1>双色球智能选号</h1>
-        <p id="status">正在加载本地数据...</p>
-    </div>
-    <div class="ledger-card">
-        <div class="ledger-item">
-            <p>累计投入</p>
-            <h3 id="ledgerCost">￥0</h3>
-        </div>
-        <div class="ledger-divider"></div>
-        <div class="ledger-item">
-            <p>累计中奖</p>
-            <h3 id="ledgerWin">￥0</h3>
-        </div>
-        <div class="ledger-divider"></div>
-        <div class="ledger-item" id="ledgerNetBox">
-            <p>当前盈亏</p>
-            <h3 id="ledgerNet">￥0</h3>
-        </div>
-    </div>
-    <div class="control-card">
-        <div class="select-row">
-            <select id="pickMode" class="select-mode">
-                <option value="6-1">单式 (6+1)</option>
-                <option value="7-2">复式 (7+2) - ￥28</option>
-                <option value="8-3">复式 (8+3) - ￥168</option>
-                <option value="9-4">复式 (9+4) - ￥672</option>
-            </select>
-            <select id="multiple" class="select-mode" style="max-width: 80px;">
-                <option value="1">1倍</option>
-                <option value="2">2倍</option>
-                <option value="5">5倍</option>
-                <option value="10">10倍</option>
-            </select>
-        </div>
-        <div class="action-row">
-            <button class="btn-main" onclick="generate(1)">机选一注</button>
-            <button class="btn-main outline" onclick="generate(3)">机选三注</button>
-        </div>
-        <button class="btn-compare" onclick="checkPrize(false)">🎯 手动比对最新开奖</button>
-        <div class="toggle-row">
-            <div>
-                <div class="toggle-label">防连出降权机制</div>
-                <div class="toggle-desc">近期出现过的号码，自动降低概率</div>
+    <div class="container">
+        <div class="card">
+            <div class="title">双色球智能选号助手</div>
+            <div class="latest-info">
+                <div>最新一期：<span id="period">加载中...</span></div>
+                <div class="ball-wrap" id="ballBox"></div>
             </div>
-            <label class="switch">
-                <input type="checkbox" id="probSwitch" checked>
-                <span class="slider"></span>
-            </label>
+            <button class="btn" onclick="loadSsqData()">🔄 刷新开奖数据</button>
+            <button class="btn" onclick="randomNum()">🎲 机选一组号码</button>
         </div>
+        <div class="card">
+            <div style="font-weight:bold;margin-bottom:12px;">最近10期历史</div>
+            <div id="historyList"></div>
+        </div>
+        <div class="tip">温馨提示：彩票纯娱乐，理性购彩</div>
     </div>
-    <div class="hot-cold-card">
-        <div class="hc-title">
-            <span>近10期走势分析</span>
-            <span style="font-size: 12px; color: #999; font-weight: normal;">仅做参考</span>
-        </div>
-        <div class="hc-row">
-            <div class="hc-label" style="color: #e53935;">🔥 红热</div>
-            <div class="hc-balls" id="hotRedList"></div>
-        </div>
-        <div class="hc-row">
-            <div class="hc-label" style="color: #1e88e5;">❄️ 红冷</div>
-            <div class="hc-balls" id="coldRedList"></div>
-        </div>
-        <div class="hc-row" style="margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px;">
-            <div class="hc-label" style="color: #1e88e5;">🔥 蓝热</div>
-            <div class="hc-balls" id="hotBlueList"></div>
-        </div>
-        <div class="hc-row">
-            <div class="hc-label" style="color: #00bcd4;">❄️ 蓝冷</div>
-            <div class="hc-balls" id="coldBlueList"></div>
-        </div>
-    </div>
-    <div class="result-card" id="resultBox">
-        <div id="pickDisplay"></div>
-    </div>
-    <div class="watch-card" id="watchBox">
-        <div class="watch-title">
-            <span>⭐ 我的追号 (最多5注)</span>
-            <button class="btn-manual" onclick="openManualInput()">✏️ 手动添加</button>
-        </div>
-        <div id="watchListDisplay"></div>
-        <button class="btn-copy-all" id="btnCopyAll" onclick="copyAllTickets()" style="display:none;">📋 一键复制所有追号</button>
-    </div>
-    <div class="history-card">
-        <div class="history-title">
-            <span>近期开奖结果</span>
-            <button class="btn-update-manual" onclick="openDrawInput()">📥 手动录入开奖</button>
-        </div>
-        <div id="historyList"></div>
-        <div class="toggle-history-btn" id="toggleHistoryBtn" onclick="toggleHistory()">展开更多 ↓</div>
-    </div>
-</div>
-<div class="modal-overlay" id="modal">
-    <div class="modal-content" id="modalContentBox">
-        <h2 id="modalTitle">开奖比对结果</h2>
-        <div class="match-detail" id="modalBody"></div>
-        <button class="btn-close" onclick="closeModal()">我知道了</button>
-    </div>
-</div>
-<div class="modal-overlay" id="manualModal">
-    <div class="modal-content">
-        <h2 style="margin-bottom: 10px; color: var(--text-main);">手动选号 (支持胆拖/复式)</h2>
-        <div class="pick-header">
-            <span>红球区</span>
-            <div class="dan-toggle">
-                <input type="checkbox" id="danMode"> 设胆模式
-            </div>
-            <span class="pick-hint" id="redHint">已选 0 个</span>
-        </div>
-        <div class="grid-container" id="redGrid"></div>
-        <div class="pick-header">
-            <span>蓝球区</span>
-            <span class="pick-hint" id="blueHint">已选 0 个</span>
-        </div>
-        <div class="grid-container" id="blueGrid" style="grid-template-columns: repeat(8, 1fr);"></div>
-        <div class="price-panel" id="pricePanel">
-            共 <strong id="noteCount">0</strong> 注，合计：<span>￥<span id="priceCount">0</span></span> 元
-        </div>
-        <button class="btn-submit" id="btnSubmitManual" onclick="saveManualTicket()" disabled>确认添加</button>
-        <button class="btn-cancel" onclick="closeManualInput()">取消</button>
-    </div>
-</div>
-<!-- 录入开奖结果弹窗（号码球点选） -->
-<div class="modal-overlay" id="drawInputModal">
-    <div class="modal-content">
-        <h2 style="margin-bottom: 10px; color: var(--text-main);">录入最新开奖结果</h2>
-        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">接口不可用时，按官网开奖号码点选录入</p>
-        <div style="text-align: left; margin-bottom: 10px; font-weight: bold; font-size: 14px;">期号</div>
-        <input type="number" id="inputCode" placeholder="例如：2026134" class="draw-code-input" style="margin-bottom: 15px;">
-        <div class="pick-header">
-            <span>红球区（选 6 个）</span>
-            <span class="pick-hint" id="drawRedHint">已选 0/6</span>
-        </div>
-        <div class="grid-container" id="drawRedGrid"></div>
-        <div class="pick-header">
-            <span>蓝球区（选 1 个）</span>
-            <span class="pick-hint" id="drawBlueHint">已选 0/1</span>
-        </div>
-        <div class="grid-container" id="drawBlueGrid" style="grid-template-columns: repeat(8, 1fr);"></div>
-        <button class="btn-submit" onclick="saveDrawInput()">保存并更新</button>
-        <button class="btn-cancel" onclick="closeDrawInput()">取消</button>
-    </div>
-</div>
+
 <script>
-    // 历史开奖数据（由 GitHub Actions 定时从福彩官网自动写入，标记之间请勿手动改动）
-    let latestHistory = [
-        // === DRAW_DATA_START ===
-        { code: "2026133", date: "2026-11-19", red: [7, 10, 11, 14, 21, 26], blue: 13 },
-        { code: "2026132", date: "2026-11-17", red: [5, 9, 13, 17, 18, 21], blue: 11 },
-        { code: "2026131", date: "2026-11-15", red: [1, 10, 19, 26, 31, 33], blue: 15 },
-        { code: "2026130", date: "2026-11-12", red: [1, 2, 6, 16, 20, 28], blue: 2 },
-        { code: "2026129", date: "2026-11-10", red: [3, 9, 16, 20, 25, 30], blue: 5 },
-        { code: "2026128", date: "2026-11-08", red: [5, 6, 10, 25, 27, 30], blue: 11 },
-        { code: "2026127", date: "2026-11-05", red: [13, 14, 19, 25, 29, 32], blue: 12 },
-        { code: "2026126", date: "2026-11-03", red: [9, 10, 13, 22, 29, 32], blue: 12 },
-        { code: "2026125", date: "2026-11-01", red: [4, 6, 10, 15, 26, 27], blue: 11 },
-        { code: "2026124", date: "2026-10-29", red: [3, 11, 17, 22, 23, 29], blue: 9 }
-        // === DRAW_DATA_END ===
-    ];
+// 你的Cloudflare Worker代理地址
+const PROXY_URL = "https://lottery-proxy-1106293639.workers.dev/?target=https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=10";
 
-    // ============新增：前端通过Worker代理拉取开奖数据============
-    async function fetchLatestLottery() {
-        const target = encodeURIComponent("https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=10");
-        const proxyUrl = `https://lottery-proxy.1106293639.workers.dev?target=${target}`;
-        try {
-            const res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error("接口返回异常");
-            const json = await res.json();
-            if (json && json.result && Array.isArray(json.result)) {
-                const newList = json.result.map(item => {
-                    const redArr = item.red.split(",").map(Number);
-                    return {
-                        code: item.code,
-                        date: item.date,
-                        red: redArr,
-                        blue: Number(item.blue)
-                    }
-                })
-                latestHistory = newList;
-                console.log("✅ 成功同步最新开奖");
-                currentDraw = latestHistory[0];
-                analyzeHotCold();
-                renderHistory();
-                renderWatchlist();
-            }
-        } catch (err) {
-            console.log("❌ 联网同步失败，使用本地兜底数据：", err);
-        }
-    }
-    fetchLatestLottery();
-    // =========================================================
-
-    // 本地手动录入的开奖（若比默认数据新则覆盖到第一项）
-    let localDraw = JSON.parse(localStorage.getItem('ssq_local_draw'));
-    if (localDraw) {
-        if (parseInt(localDraw.code) >= parseInt(latestHistory[0].code)) {
-            if (parseInt(localDraw.code) === parseInt(latestHistory[0].code)) {
-                latestHistory[0] = localDraw;
-            } else {
-                latestHistory.unshift(localDraw);
-                latestHistory = latestHistory.slice(0, 10);
-            }
-        }
-    }
-    let myWatchlist = JSON.parse(localStorage.getItem('ssq_watchlist')) || [];
-    let currentDraw = latestHistory[0];
-    let ledger = JSON.parse(localStorage.getItem('ssq_ledger')) || { cost: 0, win: 0 };
-    let selectedDans = [], selectedTuos = [], selectedBlues = [];
-    let hotReds = [], coldReds = [], hotBlues = [], coldBlues = [];
-    let isHistoryExpanded = false;
-    // 录入开奖的点选状态
-    let drawReds = [], drawBlue = null;
-    function combination(n, k) {
-        if (k < 0 || k > n) return 0;
-        if (k === 0 || k === n) return 1;
-        let res = 1;
-        for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i;
-        return Math.round(res);
-    }
-    function init() {
-        myWatchlist.forEach(ticket => {
-            if (!ticket.dans) ticket.dans = [];
-            if (!ticket.tuos) ticket.tuos = ticket.red;
-            if (!Array.isArray(ticket.blue)) ticket.blue = [ticket.blue];
-            if (!ticket.issueWhenAdded) ticket.issueWhenAdded = "0";
-            if (ticket.isInfinite === undefined) ticket.isInfinite = false;
-            if (!ticket.multiple) ticket.multiple = 1;
-        });
-        localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-        renderLedger();
-        analyzeHotCold();
-        renderWatchlist();
-        renderHistory();
-        document.getElementById('status').innerText = `本地数据已加载 (第 ${currentDraw.code} 期)`;
-        document.getElementById('status').style.color = "#2ecc71";
-        let hasComparable = myWatchlist.some(t => t.issueWhenAdded !== currentDraw.code || t.isInfinite);
-        if (myWatchlist.length > 0 && hasComparable) {
-            setTimeout(() => { checkPrize(true); }, 500);
-        }
-    }
-    // ===== 手动录入开奖：号码球点选 =====
-    function openDrawInput() {
-        drawReds = [];
-        drawBlue = null;
-        if (currentDraw) {
-            document.getElementById('inputCode').value = parseInt(currentDraw.code) + 1;
-        } else {
-            document.getElementById('inputCode').value = '';
-        }
-        renderDrawGrids();
-        document.getElementById('drawInputModal').style.display = 'flex';
-    }
-    function closeDrawInput() { document.getElementById('drawInputModal').style.display = 'none'; }
-    function renderDrawGrids() {
-        const redGrid = document.getElementById('drawRedGrid');
-        redGrid.innerHTML = '';
-        for (let i = 1; i <= 33; i++) {
-            let isSel = drawReds.includes(i);
-            let btn = document.createElement('div');
-            btn.className = 'num-btn' + (isSel ? ' selected red' : '');
-            btn.innerText = String(i).padStart(2, '0');
-            btn.onclick = () => toggleDrawRed(i);
-            redGrid.appendChild(btn);
-        }
-        const blueGrid = document.getElementById('drawBlueGrid');
-        blueGrid.innerHTML = '';
-        for (let i = 1; i <= 16; i++) {
-            let isSel = drawBlue === i;
-            let btn = document.createElement('div');
-            btn.className = 'num-btn' + (isSel ? ' selected blue' : '');
-            btn.innerText = String(i).padStart(2, '0');
-            btn.onclick = () => toggleDrawBlue(i);
-            blueGrid.appendChild(btn);
-        }
-        document.getElementById('drawRedHint').innerText = `已选 ${drawReds.length}/6`;
-        document.getElementById('drawBlueHint').innerText = `已选 ${drawBlue ? 1 : 0}/1`;
-    }
-    function toggleDrawRed(num) {
-        let idx = drawReds.indexOf(num);
-        if (idx > -1) {
-            drawReds.splice(idx, 1);
-        } else {
-            if (drawReds.length >= 6) { showToast("红球最多选 6 个"); return; }
-            drawReds.push(num);
-        }
-        renderDrawGrids();
-    }
-    function toggleDrawBlue(num) {
-        drawBlue = (drawBlue === num) ? null : num;
-        renderDrawGrids();
-    }
-    function saveDrawInput() {
-        let code = document.getElementById('inputCode').value.trim();
-        if (!code) { showToast("请输入期号"); return; }
-        if (drawReds.length !== 6) { showToast("请点选 6 个红球"); return; }
-        if (drawBlue == null) { showToast("请点选 1 个蓝球"); return; }
-        let reds = [...drawReds].sort((a, b) => a - b);
-        let today = new Date();
-        let dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        let newDraw = { code: code, date: dateStr, red: reds, blue: drawBlue };
-        localStorage.setItem('ssq_local_draw', JSON.stringify(newDraw));
-        location.reload();
-    }
-    function renderHistory() {
-        const container = document.getElementById('historyList');
-        container.innerHTML = '';
-        if (latestHistory.length === 0) {
-            container.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无数据</div>';
+// 拉取开奖数据
+async function loadSsqData() {
+    try {
+        const res = await fetch(PROXY_URL);
+        if (!res.ok) throw new Error("接口请求失败");
+        const jsonData = await res.json();
+        const arr = jsonData.result;
+        if(!arr || arr.length ===0) {
+            alert("没有拿到开奖数据");
             return;
         }
-        let displayList = isHistoryExpanded ? latestHistory : latestHistory.slice(0, 5);
-        displayList.forEach(item => {
-            let redHtml = item.red.map(n => `<span class="ball red" style="width:28px;height:28px;font-size:14px;">${String(n).padStart(2,'0')}</span>`).join('');
-            let blueHtml = `<span class="ball blue" style="width:28px;height:28px;font-size:14px;">${String(item.blue).padStart(2,'0')}</span>`;
-            container.innerHTML += `<div class="history-item"><div class="history-info"><span>第 ${item.code} 期</span><span>${item.date}</span></div><div class="ball-group">${redHtml}<span class="ball plus">+</span>${blueHtml}</div></div>`;
-        });
-        const btn = document.getElementById('toggleHistoryBtn');
-        if (latestHistory.length > 5) {
-            btn.style.display = 'block';
-            btn.innerText = isHistoryExpanded ? '收起记录 ↑' : '展开更多 ↓';
-        } else { btn.style.display = 'none'; }
+        // 最新一期
+        const latest = arr[0];
+        document.getElementById("period").innerText = latest.code + "期";
+        const redArr = latest.red.split(",");
+        const blue = latest.blue;
+        let html = "";
+        redArr.forEach(n=>{
+            html += `<div class="red-ball">${n}</div>`
+        })
+        html += `<div class="blue-ball">${blue}</div>`
+        document.getElementById("ballBox").innerHTML = html;
+
+        // 渲染历史列表
+        let historyHtml = "";
+        arr.forEach(item=>{
+            historyHtml += `
+            <div class="history-item">
+                ${item.code}期｜红球：${item.red}｜蓝球：${item.blue}
+            </div>
+            `
+        })
+        document.getElementById("historyList").innerHTML = historyHtml;
+    } catch(e) {
+        console.error(e);
+        alert("数据拉取失败："+e.message);
     }
-    function toggleHistory() { isHistoryExpanded = !isHistoryExpanded; renderHistory(); }
-    function analyzeHotCold() {
-        let redCounts = {}, blueCounts = {};
-        for(let i=1; i<=33; i++) redCounts[i] = 0;
-        for(let i=1; i<=16; i++) blueCounts[i] = 0;
-        latestHistory.forEach(item => {
-            item.red.forEach(n => redCounts[n]++);
-            blueCounts[item.blue]++;
-        });
-        let sortedReds = Object.keys(redCounts).map(Number).sort((a,b) => redCounts[b] - redCounts[a]);
-        hotReds = sortedReds.filter(n => redCounts[n] >= 2).slice(0, 6);
-        coldReds = sortedReds.filter(n => redCounts[n] === 0).slice(0, 6);
-        document.getElementById('hotRedList').innerHTML = hotReds.map(n => `<span class="hc-ball hc-hot">${String(n).padStart(2,'0')}</span>`).join('');
-        document.getElementById('coldRedList').innerHTML = coldReds.map(n => `<span class="hc-ball hc-cold">${String(n).padStart(2,'0')}</span>`).join('');
-        let sortedBlues = Object.keys(blueCounts).map(Number).sort((a,b) => blueCounts[b] - blueCounts[a]);
-        hotBlues = sortedBlues.filter(n => blueCounts[n] >= 2).slice(0, 4);
-        coldBlues = sortedBlues.filter(n => blueCounts[n] === 0).slice(0, 5);
-        document.getElementById('hotBlueList').innerHTML = hotBlues.map(n => `<span class="hc-ball hc-hot-blue">${String(n).padStart(2,'0')}</span>`).join('');
-        document.getElementById('coldBlueList').innerHTML = coldBlues.map(n => `<span class="hc-ball hc-cold-blue">${String(n).padStart(2,'0')}</span>`).join('');
+}
+
+// 机选号码
+function randomNum() {
+    let redPool = Array.from({length:33}, (_,i)=>i+1);
+    let red = [];
+    for(let i=0;i<6;i++){
+        let r = Math.floor(Math.random() * redPool.length);
+        red.push(redPool.splice(r,1)[0]);
     }
-    function renderLedger() {
-        document.getElementById('ledgerCost').innerText = `￥${ledger.cost}`;
-        document.getElementById('ledgerWin').innerText = `￥${ledger.win}`;
-        let net = ledger.win - ledger.cost;
-        let netBox = document.getElementById('ledgerNet');
-        let netItem = document.getElementById('ledgerNetBox');
-        if (net >= 0) { netBox.innerText = `+￥${net}`; netItem.className = 'ledger-item win'; }
-        else { netBox.innerText = `-￥${Math.abs(net)}`; netItem.className = 'ledger-item loss'; }
-    }
-    function updateLedger(costAdd, winAdd) {
-        if (costAdd) ledger.cost += costAdd;
-        if (winAdd) ledger.win += winAdd;
-        localStorage.setItem('ssq_ledger', JSON.stringify(ledger));
-        renderLedger();
-    }
-    function getStreak(num, type, history) {
-        let streak = 0;
-        for (let i = 0; i < Math.min(3, history.length); i++) {
-            let isHit = type === 'red' ? history[i].red.includes(num) : history[i].blue === num;
-            if (isHit) streak++; else break;
-        }
-        return streak;
-    }
-    function getWeight(num, type, history) {
-        const streak = getStreak(num, type, history);
-        if (streak >= 3) return 0;
-        if (streak === 2) return 0.90;
-        if (streak === 1) return 0.95;
-        return 1.0;
-    }
-    function generateOneTicket(useProb) {
-        const mode = document.getElementById('pickMode').value;
-        const [rCount, bCount] = mode.split('-').map(Number);
-        const multiple = parseInt(document.getElementById('multiple').value);
-        let poolRed = [];
-        for (let i = 1; i <= 33; i++) poolRed.push({ num: i, weight: useProb ? getWeight(i, 'red', latestHistory) : 1.0 });
-        let reds = [];
-        for (let k = 0; k < rCount; k++) {
-            let totalW = poolRed.reduce((sum, item) => sum + item.weight, 0);
-            if (totalW === 0) { poolRed.forEach(item => item.weight = 1); totalW = poolRed.length; }
-            let rand = Math.random() * totalW;
-            let idx = -1;
-            for (let j = 0; j < poolRed.length; j++) { rand -= poolRed[j].weight; if (rand <= 0) { idx = j; break; } }
-            if (idx === -1) idx = poolRed.length - 1;
-            reds.push(poolRed[idx].num); poolRed.splice(idx, 1);
-        }
-        reds.sort((a,b) => a-b);
-        let poolBlue = [];
-        for (let i = 1; i <= 16; i++) poolBlue.push({ num: i, weight: useProb ? getWeight(i, 'blue', latestHistory) : 1.0 });
-        let blues = [];
-        for (let k = 0; k < bCount; k++) {
-            let totalB = poolBlue.reduce((sum, item) => sum + item.weight, 0);
-            if (totalB === 0) { poolBlue.forEach(item => item.weight = 1); totalB = poolBlue.length; }
-            let randB = Math.random() * totalB;
-            let idx = -1;
-            for (let j = 0; j < poolBlue.length; j++) { randB -= poolBlue[j].weight; if (randB <= 0) { idx = j; break; } }
-            if (idx === -1) idx = poolBlue.length - 1;
-            blues.push(poolBlue[idx].num); poolBlue.splice(idx, 1);
-        }
-        blues.sort((a,b) => a-b);
-        return { dans: [], tuos: reds, blue: blues, multiple: multiple };
-    }
-    function generate(count) {
-        if (latestHistory.length === 0) { showToast("暂无数据，请先录入开奖"); return; }
-        const useProb = document.getElementById('probSwitch').checked;
-        let displayDiv = document.getElementById('pickDisplay');
-        displayDiv.innerHTML = '';
-        document.getElementById('resultBox').style.display = 'block';
-        for (let i = 0; i < count; i++) {
-            let ticket = generateOneTicket(useProb);
-            let isSaved = myWatchlist.some(w => w.tuos.join() === ticket.tuos.join() && w.blue.join() === ticket.blue.join() && w.multiple === ticket.multiple);
-            let redHtml = ticket.tuos.map(n => `<span class="ball red">${String(n).padStart(2,'0')}</span>`).join('');
-            let blueHtml = ticket.blue.map(n => `<span class="ball blue">${String(n).padStart(2,'0')}</span>`).join('');
-            let notes = combination(ticket.tuos.length, 6) * ticket.blue.length;
-            let price = notes * 2 * ticket.multiple;
-            displayDiv.innerHTML += `<div class="result-item"><div class="result-top"><div class="ball-group">${redHtml}<span class="ball plus">+</span>${blueHtml}</div></div><div class="watch-bottom"><span class="price-tag">${ticket.multiple}倍 | ${notes}注 | ￥${price}元</span><div class="action-btns"><button class="btn-small btn-copy" onclick='copyTicket(${JSON.stringify(ticket)})'>复制</button><button class="btn-small btn-save" onclick='saveWatch(${JSON.stringify(ticket)})' ${isSaved ? 'disabled' : ''}>${isSaved ? '已追号' : '⭐ 追号'}</button></div></div></div>`;
-        }
-    }
-    function copyToClipboard(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => showToast("号码已复制")).catch(err => fallbackCopyTextToClipboard(text));
-        } else { fallbackCopyTextToClipboard(text); }
-    }
-    function fallbackCopyTextToClipboard(text) {
-        var textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.top = "0"; textArea.style.left = "0"; textArea.style.position = "fixed"; textArea.style.opacity = "0";
-        document.body.appendChild(textArea);
-        textArea.focus(); textArea.select();
-        try {
-            var successful = document.execCommand('copy');
-            successful ? showToast("号码已复制") : showToast("复制失败，请长按手动复制");
-        } catch (err) { showToast("复制失败，请长按手动复制"); }
-        document.body.removeChild(textArea);
-    }
-    function copyTicket(ticket) {
-        let rStr = ticket.tuos.map(n => String(n).padStart(2,'0')).join(' ');
-        let bStr = ticket.blue.map(n => String(n).padStart(2,'0')).join(' ');
-        let text = `${rStr} + ${bStr} (${ticket.multiple}倍)`;
-        copyToClipboard(text);
-    }
-    function copyAllTickets() {
-        if(myWatchlist.length === 0) return;
-        let text = "【我的双色球追号】\n";
-        myWatchlist.forEach((ticket, index) => {
-            let rStr = ticket.tuos.map(n => String(n).padStart(2,'0')).join(' ');
-            let bStr = ticket.blue.map(n => String(n).padStart(2,'0')).join(' ');
-            let tag = ticket.dans && ticket.dans.length > 0 ? `[胆:${ticket.dans.join(',')}] ` : "";
-            text += `第${index+1}注: ${tag}${rStr} + ${bStr} (${ticket.multiple}倍)\n`;
-        });
-        copyToClipboard(text);
-    }
-    function saveWatch(ticket) {
-        if (myWatchlist.length >= 5) { showToast("最多只能追号 5 注！"); return; }
-        ticket.issueWhenAdded = currentDraw ? currentDraw.code : "0";
-        ticket.isInfinite = false;
-        myWatchlist.push(ticket);
-        localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-        let notes = combination(ticket.tuos.length + ticket.dans.length, 6) * ticket.blue.length;
-        if (ticket.dans.length > 0) notes = combination(ticket.tuos.length, 6 - ticket.dans.length) * ticket.blue.length;
-        updateLedger(notes * 2 * ticket.multiple, 0);
-        renderWatchlist();
-        if(document.getElementById('resultBox').style.display === 'block') generate(document.querySelectorAll('.result-item').length);
-        showToast("追号成功，已扣除本金");
-    }
-    function removeWatch(index) {
-        if (confirm("确定要移除这注追号吗？")) {
-            myWatchlist.splice(index, 1);
-            localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-            renderWatchlist();
-            if(document.getElementById('resultBox').style.display === 'block') generate(document.querySelectorAll('.result-item').length);
-        }
-    }
-    function rolloverTicket(index) {
-        if (!currentDraw) { showToast("数据尚未加载完毕"); return; }
-        myWatchlist[index].issueWhenAdded = currentDraw.code;
-        localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-        renderWatchlist();
-        showToast("已追加，下期自动比对");
-    }
-    function toggleInfinite(index) {
-        myWatchlist[index].isInfinite = !myWatchlist[index].isInfinite;
-        if(myWatchlist[index].isInfinite && currentDraw) myWatchlist[index].issueWhenAdded = currentDraw.code;
-        localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-        renderWatchlist();
-        showToast(myWatchlist[index].isInfinite ? "已开启永久守号" : "已关闭永久守号");
-    }
-    function renderWatchlist() {
-        let box = document.getElementById('watchBox');
-        let display = document.getElementById('watchListDisplay');
-        let btnCopyAll = document.getElementById('btnCopyAll');
-        box.style.display = 'block';
-        display.innerHTML = '';
-        if (myWatchlist.length === 0) {
-            display.innerHTML = '<div style="text-align:center; color:#ccc; font-size:13px; padding:10px;">暂无追号，可机选或手动添加</div>';
-            btnCopyAll.style.display = 'none';
-            return;
-        }
-        btnCopyAll.style.display = 'block';
-        myWatchlist.forEach((ticket, index) => {
-            let danHtml = ticket.dans && ticket.dans.length > 0 ? ticket.dans.map(n => `<span class="ball gold" style="width:28px;height:28px;font-size:14px;">${String(n).padStart(2,'0')}</span>`).join('') : '';
-            let tuoHtml = ticket.tuos.map(n => `<span class="ball red" style="width:28px;height:28px;font-size:14px;">${String(n).padStart(2,'0')}</span>`).join('');
-            let blueHtml = ticket.blue.map(n => `<span class="ball blue" style="width:28px;height:28px;font-size:14px;">${String(n).padStart(2,'0')}</span>`).join('');
-            let notes = combination(ticket.tuos.length, 6) * ticket.blue.length;
-            if (ticket.dans && ticket.dans.length > 0) notes = combination(ticket.tuos.length, 6 - ticket.dans.length) * ticket.blue.length;
-            let price = notes * 2 * ticket.multiple;
-            let statusTag = "", actionBtns = "";
-            if (ticket.isInfinite) { statusTag = `<span class="status-tag status-inf">永久守号</span>`; actionBtns = `<button class="btn-inf active" onclick="toggleInfinite(${index})">∞ 已开启</button>`; }
-            else if (currentDraw && ticket.issueWhenAdded === currentDraw.code) { statusTag = `<span class="status-tag status-wait">等待下期开奖</span>`; actionBtns = `<button class="btn-inf" onclick="toggleInfinite(${index})">∞ 开启守号</button>`; }
-            else { statusTag = `<span class="status-tag status-done">已比对</span>`; actionBtns = `<button class="btn-rollover" onclick="rolloverTicket(${index})">🔄 追加</button><button class="btn-inf" onclick="toggleInfinite(${index})">∞ 开启守号</button>`; }
-            let danTag = (ticket.dans && ticket.dans.length > 0) ? `<span class="status-tag status-dan">含胆码</span>` : '';
-            display.innerHTML += `<div class="watch-item"><div class="ball-group">${danHtml}${tuoHtml}<span class="ball plus">+</span>${blueHtml}${statusTag}${danTag}</div><div class="watch-bottom"><span class="price-tag">${ticket.multiple}倍 | ￥${price}</span><div style="display:flex; align-items:center;">${actionBtns}<button class="btn-del" onclick="removeWatch(${index})">×</button></div></div></div>`;
-        });
-    }
-    function getPrizeLevel(redHit, blueHit) {
-        if (redHit === 6 && blueHit === 1) return { level: '一等奖', money: 5000000 };
-        if (redHit === 6 && blueHit === 0) return { level: '二等奖', money: 150000 };
-        if (redHit === 5 && blueHit === 1) return { level: '三等奖', money: 3000 };
-        if ((redHit === 5 && blueHit === 0) || (redHit === 4 && blueHit === 1)) return { level: '四等奖', money: 200 };
-        if ((redHit === 4 && blueHit === 0) || (redHit === 3 && blueHit === 1)) return { level: '五等奖', money: 10 };
-        if (blueHit === 1 || (redHit === 2 && blueHit === 1) || (redHit === 1 && blueHit === 1)) return { level: '六等奖', money: 5 };
-        return null;
-    }
-    function checkPrize(isAuto = false) {
-        if (!currentDraw) { showToast("数据未加载完毕"); return; }
-        if (myWatchlist.length === 0) { if(!isAuto) showToast("请先添加追号！"); return; }
-        let drawRed = currentDraw.red;
-        let drawBlue = currentDraw.blue;
-        let hasWin = false, hasComparable = false, totalWinMoney = 0;
-        let bodyHtml = `<div style="font-size:13px;color:#666;margin-bottom:15px;text-align:center;">第 <b>${currentDraw.code}</b> 期开奖：<br><span style="color:#e53935;font-weight:bold;">${drawRed.map(n=>String(n).padStart(2,'0')).join(' ')}</span> <span style="color:#1e88e5;font-weight:bold;">+ ${String(drawBlue).padStart(2,'0')}</span></div>`;
-        myWatchlist.forEach((ticket, index) => {
-            if (!ticket.isInfinite && ticket.issueWhenAdded === currentDraw.code) {
-                if (!isAuto) bodyHtml += `<div style="border-top:1px dashed #ccc;padding-top:10px;margin-top:10px;color:#1e88e5;"><span style="font-weight:bold;">第 ${index+1} 注：等待开奖</span><div style="font-size:12px;">该注是第 ${ticket.issueWhenAdded} 期开奖后添加的，将参与下一期开奖。</div></div>`;
-                return;
-            }
-            hasComparable = true;
-            let allReds = [...(ticket.dans || []), ...ticket.tuos];
-            let hitRed = allReds.filter(n => drawRed.includes(n)).length;
-            let hitBlue = ticket.blue.some(n => drawBlue.includes(n)) ? 1 : 0;
-            let prize = getPrizeLevel(hitRed, hitBlue);
-            let alreadySettled = (ticket.lastWinIssue === currentDraw.code);
-            if (ticket.isInfinite) ticket.issueWhenAdded = currentDraw.code;
-            if (prize) {
-                hasWin = true;
-                let winMoney = prize.money * ticket.multiple;
-                if (!alreadySettled) { totalWinMoney += winMoney; ticket.lastWinIssue = currentDraw.code; }
-                bodyHtml += `<div style="border-top:1px dashed #ccc;padding-top:10px;margin-top:10px;"><span class="prize-level">🎉 第 ${index+1} 注：包含 ${prize.level} (约 ￥${winMoney})</span><div style="font-size:12px;color:#555;">命中红球 ${hitRed} 个，蓝球 ${hitBlue} 个</div>${ticket.multiple > 1 ? `<div style="font-size:12px;color:var(--gold-color);">(已计算 ${ticket.multiple} 倍)</div>` : ''}</div>`;
-            } else if (!isAuto) {
-                bodyHtml += `<div style="border-top:1px dashed #ccc;padding-top:10px;margin-top:10px;color:#999;"><span style="font-weight:bold; color:#333;">第 ${index+1} 注：未中奖</span><div style="font-size:12px;">命中红球 ${hitRed} 个，蓝球 ${hitBlue} 个</div></div>`;
-            }
-        });
-        if (totalWinMoney > 0) updateLedger(0, totalWinMoney);
-        if (hasWin) {
-            document.getElementById('modalTitle').innerText = "🎉 恭喜您中奖啦！";
-            document.getElementById('modalContentBox').classList.add('win-bg');
-            document.getElementById('modalBody').innerHTML = bodyHtml;
-            document.getElementById('modal').style.display = 'flex';
-        } else if (!isAuto && hasComparable) {
-            document.getElementById('modalTitle').innerText = "开奖比对结果";
-            document.getElementById('modalContentBox').classList.remove('win-bg');
-            document.getElementById('modalBody').innerHTML = bodyHtml;
-            document.getElementById('modal').style.display = 'flex';
-        } else if (!isAuto && !hasComparable) {
-            document.getElementById('modalTitle').innerText = "暂时无法比对";
-            document.getElementById('modalContentBox').classList.remove('win-bg');
-            document.getElementById('modalBody').innerHTML = bodyHtml + `<div style="text-align:center;color:#999;margin-top:20px;">目前所有的追号都在等待下一期开奖，请耐心等待哦。</div>`;
-            document.getElementById('modal').style.display = 'flex';
-        }
-        localStorage.setItem('ssq_watchlist', JSON.stringify(myWatchlist));
-        renderWatchlist();
-    }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function showToast(msg) {
-        let toast = document.getElementById('toast');
-        toast.innerText = msg;
-        toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 2000);
-    }
-    function openManualInput() {
-        if (myWatchlist.length >= 5) { showToast("追号已满 5 注，无法继续添加！"); return; }
-        selectedDans = []; selectedTuos = []; selectedBlues = [];
-        document.getElementById('danMode').checked = false;
-        renderPickGrids();
-        document.getElementById('manualModal').style.display = 'flex';
-    }
-    function closeManualInput() { document.getElementById('manualModal').style.display = 'none'; }
-    function renderPickGrids() {
-        const isDanMode = document.getElementById('danMode').checked;
-        const redGrid = document.getElementById('redGrid');
-        redGrid.innerHTML = '';
-        for (let i = 1; i <= 33; i++) {
-            let isDan = selectedDans.includes(i), isTuo = selectedTuos.includes(i);
-            let btn = document.createElement('div');
-            btn.className = 'num-btn';
-            if (isDan) btn.classList.add('selected', 'gold');
-            else if (isTuo) btn.classList.add('selected', 'red');
-            let mark = '';
-            if (hotReds.includes(i)) mark = `<span class="hot-mark">🔥</span>`;
-            if (coldReds.includes(i)) mark = `<span class="cold-mark">❄️</span>`;
-            btn.innerHTML = `${String(i).padStart(2, '0')}${mark}`;
-            btn.onclick = () => toggleRed(i, isDanMode);
-            redGrid.appendChild(btn);
-        }
-        const blueGrid = document.getElementById('blueGrid');
-        blueGrid.innerHTML = '';
-        for (let i = 1; i <= 16; i++) {
-            let isSelected = selectedBlues.includes(i);
-            let btn = document.createElement('div');
-            btn.className = 'num-btn blue';
-            if (isSelected) btn.classList.add('selected');
-            let mark = '';
-            if (hotBlues.includes(i)) mark = `<span class="hot-mark">🔥</span>`;
-            if (coldBlues.includes(i)) mark = `<span class="cold-mark">❄️</span>`;
-            btn.innerHTML = `${String(i).padStart(2, '0')}${mark}`;
-            btn.onclick = () => toggleBlue(i);
-            blueGrid.appendChild(btn);
-        }
-        document.getElementById('redHint').innerText = `胆:${selectedDans.length} 拖:${selectedTuos.length}`;
-        document.getElementById('blueHint').innerText = `已选 ${selectedBlues.length} 个`;
-        const pricePanel = document.getElementById('pricePanel');
-        const submitBtn = document.getElementById('btnSubmitManual');
-        let isValid = false, notes = 0;
-        let totalReds = selectedDans.length + selectedTuos.length;
-        if (totalReds >= 6 && selectedBlues.length >= 1) {
-            if (selectedDans.length === 0) { notes = combination(selectedTuos.length, 6) * selectedBlues.length; isValid = true; }
-            else {
-                let needTuo = 6 - selectedDans.length;
-                if (selectedTuos.length >= needTuo) { notes = combination(selectedTuos.length, needTuo) * selectedBlues.length; isValid = true; }
-            }
-        }
-        if (isValid) {
-            let price = notes * 2;
-            document.getElementById('noteCount').innerText = notes;
-            document.getElementById('priceCount').innerText = price;
-            pricePanel.style.display = 'block';
-            submitBtn.disabled = false;
-            submitBtn.style.background = 'var(--red-color)';
-        } else {
-            pricePanel.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.style.background = '#ccc';
-        }
-    }
-    function vibrate() { if (navigator.vibrate) navigator.vibrate(20); }
-    function toggleRed(num, isDanMode) {
-        vibrate();
-        let idxDan = selectedDans.indexOf(num), idxTuo = selectedTuos.indexOf(num);
-        if (isDanMode) {
-            if (idxDan > -1) selectedDans.splice(idxDan, 1);
-            else {
-                if (selectedDans.length >= 5) { showToast("胆码最多只能选 5 个！"); return; }
-                selectedDans.push(num);
-                if (idxTuo > -1) selectedTuos.splice(idxTuo, 1);
-            }
-        } else {
-            if (idxTuo > -1) selectedTuos.splice(idxTuo, 1);
-            else {
-                if (selectedTuos.length >= 20) { showToast("拖码选太多啦！"); return; }
-                selectedTuos.push(num);
-                if (idxDan > -1) selectedDans.splice(idxDan, 1);
-            }
-        }
-        renderPickGrids();
-    }
-    function toggleBlue(num) {
-        vibrate();
-        let idx = selectedBlues.indexOf(num);
-        if (idx > -1) selectedBlues.splice(idx, 1);
-        else {
-            if (selectedBlues.length >= 16) { showToast("蓝球最多只能选 16 个！"); return; }
-            selectedBlues.push(num);
-        }
-        renderPickGrids();
-    }
-    function saveManualTicket() {
-        if (document.getElementById('btnSubmitManual').disabled) return;
-        selected
+    red.sort((a,b)=>a-b);
+    let blue = Math.floor(Math.random()*16)+1;
+    alert(`机选结果：\n红球：${red.join(",")}\n蓝球：${blue}`);
+}
+
+// 页面打开自动加载
+window.onload = loadSsqData;
+</script>
+</body>
+</html>
